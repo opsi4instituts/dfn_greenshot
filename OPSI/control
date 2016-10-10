@@ -1,0 +1,123 @@
+[Package]
+version: 1
+depends: 
+incremental: False
+
+[Product]
+type: localboot
+id: dfn_greenshot
+name: Greenshot
+description: Tool zum Aufnehmen von Bildschirmfotos (Screenshots).
+advice: 
+version: 1.2.8.12
+priority: 0
+licenseRequired: False
+productClasses: 
+setupScript: setup64.opsiscript
+uninstallScript: uninstall64.opsiscript
+updateScript: 
+alwaysScript: 
+onceScript: 
+customScript: 
+userLoginScript: 
+
+[ProductProperty]
+type: unicode
+name: language
+multivalue: False
+editable: True
+description: Language the program should run in (in the IETF format (e.g. en-US or de-DE))
+values: ["auto", "de-DE", "en-US"]
+default: ["auto"]
+
+[ProductProperty]
+type: unicode
+name: allowed-plugins
+multivalue: True
+editable: True
+description: Define which Plugins should be active (if " " is selected as the only thing, all are active. Selecte "none" as the only thing, if you don't want to have any Plugins)
+values: [" ", "Box Plugin", "Confluence Plugin", "Dropbox Plugin", "External command Plugin", "Flickr Plugin", "Imgur Plugin", "Jira Plugin", "Office Plugin", "Photobucket Plugin", "Picasa-Web Plugin", "none"]
+default: [" "]
+
+[ProductProperty]
+type: unicode
+name: desktopicon
+multivalue: False
+editable: False
+description: Icon on Desktop
+values: ["no", "yes"]
+
+[ProductProperty]
+type: unicode
+name: custom-post-install
+multivalue: False
+editable: False
+description: Define filename for include script in custom directory after installation
+values: ["none", "post-install.opsiinc"]
+default: ["none"]
+
+[ProductProperty]
+type: unicode
+name: custom-post-deinstall
+multivalue: False
+editable: False
+description: Define filename for include script in custom directory after deinstallation
+values: ["none", "post-deinstall.opsiinc"]
+default: ["none"]
+
+[Changelog]
+dfn_greenshot (1.2.8.12-1)
+	* Initiales DFN-Paket
+ -- Lukas Stapelbroek (archIT/KIT) <lukas.stapelbroek9@kit.edu>, 10.10.2016
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

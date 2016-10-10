@@ -1,0 +1,108 @@
+; Copyright (c) uib gmbh (www.uib.de)
+; This sourcecode is owned by uib
+; and published under the Terms of the General Public License.
+; credits: http://www.opsi.org/credits/
+
+[Actions]
+; common Values for (un)installation
+include_insert "common.opsiinc"
+
+if not(HasMinimumSpace ("%SystemDrive%", $MinimumSpace$))
+	LogError "Not enough space on %SystemDrive%, " + $MinimumSpace$ + " on drive %SystemDrive% needed for " + $ProductId$
+	isFatalError
+	; Stop process and set installation status to failed
+else
+	comment "Show product picture"
+	ShowBitmap "%ScriptPath%\o4i.png" $ProductName$
+	
+	if FileExists("%ScriptPath%\delsub64.opsiscript")
+		comment "Start uninstall sub section"
+		Sub "%ScriptPath%\delsub64.opsiscript"
+	endif
+
+	Message "Installing %installingProdName% (%installingProdVersion%) 64 Bit..."
+	comment "Starting the setup program"
+	Files_install
+	
+	Registry_setup /64Bit
+	
+	comment "Test for installation success"
+	
+	; Parameter: $SearchPattern$: Suchbegriff in Registry
+	Set $SearchPattern$ = $ProductName$
+	
+	Sub_search_registry64_uninstall_keys
+	; Rückgabewert: $ResultList$ gefundene Einträge
+	
+	if ( count ($ResultList64$) = "0" )
+		logError "Fatal: After Installation " + $ProductName$ + " could not be found in " + $RegPathUninstall$
+		isFatalError
+	else
+		Set $RegId$ = takeString(0, $ResultList64$)
+		comment "Get 'InstallLocation' from registry for path to exe"
+		Set $InstallDir$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] InstallLocation")
+		Set $PathToExe$ = $InstallDir$ + "\" + $EXE$
+		set $DesktopIcon$ = getProductProperty("desktopicon","no")
+		if $DesktopIcon$ = "yes"
+			comment "Create common desktop icon"
+			Linkfolder_install_desktopicon
+		endif
+		
+		comment "include custom post install file"
+		set $CustomPostInstall$ = getProductProperty("custom-post-install","none")
+		if not ($CustomPostInstall$ = "none")
+			if FileExists("%ScriptPath%\custom\" + $CustomPostInstall$)
+				include_insert "%ScriptPath%\custom\" + $CustomPostInstall$	
+			endif
+		endif
+	endif
+	
+	;patche die Sprachdatei, sodass Greenshot nicht jedes mal nach der Sprache fragt, sondern den eingestellten Standard nimmt
+	Patches_greenshot.ini $InstallDir$ + "\greenshot.ini"
+
+	;aktiviere hier die Plugins, welche ausgewählt wurden. Wurden keine Ausgewählt, so sind automatisch alle aktiviert
+	Set $PluginList$ = GetProductPropertyList ("allowed-plugins","")
+	for %s% in $PluginList$ do sub_concatStrings
+	Patches_plugins $InstallDir$ + "\greenshot.ini"
+	
+endif
+
+[Registry_setup]
+; da wir keinen Installer nehmen, müssen ein paar notwendige Keys angelegt werden, damit sie unter 'Systemeinstellungen' > 'Software und Funktionen' auftaucht
+openkey [$RegPathUninstall$\$ProductName$]
+set "DisplayName" = REG_SZ:"$ProductName$ OPSI-Version: $ProductVersion$"
+set "InstallLocation" = REG_SZ:"$InstallDIR$"
+set "UninstallDirectory" = REG_SZ:"$InstallDIR$"
+;UninstallString ist der entscheidende Eintrag, damit es überhaupt angezeigt wird!
+;da es in diesem Fall keine Deinstallationsroutine gibt, rufen wir ein VBS mit einem Hinweis auf
+set "UninstallString" = REG_SZ:'wscript "$InstallDIR$\uninstall.vbs"'
+set "NoRepair" = REG_DWORD:0001
+set "NoModify" = REG_DWORD:0001
+
+
+;zu Autos
+openKey [$AutostartRegPath$]
+set "Greenshot"       = REG_SZ:"$InstallDIR$\$EXE$"
+
+[Files_install]
+copy -sV "%SCRIPTPATH%\$InstFiles$\*.*" "$InstallDIR$"
+
+[Patches_greenshot.ini]
+change [Core] Language=$language$
+
+[Patches_plugins]
+change [Core] IncludePlugins=$allowedPlugins$
+
+[sub_concatStrings]
+if not(Trim("%s%") = "")
+	Set $allowedPlugins$ = $allowedPlugins$ + "%s%,"
+endif
+
+[Linkfolder_install_desktopicon]
+set_basefolder common_desktopdirectory
+set_subfolder ""
+
+set_link
+	name: $ProductName$
+	target: $PathToExe$
+end_link

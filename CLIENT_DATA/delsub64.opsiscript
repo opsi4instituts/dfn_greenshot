@@ -1,0 +1,72 @@
+; Copyright (c) uib gmbh (www.uib.de)
+; This sourcecode is owned by uib gmbh
+; and published under the Terms of the General Public License.
+; credits: http://www.opsi.org/credits/
+
+; Parameter: $SearchPattern$: Suchbegriff in Registry
+Set $SearchPattern$ = $ProductName$
+
+Sub_search_registry64_uninstall_keys
+; Rückgabewert: $ResultList$ gefundene Einträge
+
+if (count ($ResultList64$) = "0")
+	comment "No installations of " + $SearchPattern$ + " found in registry"
+else
+	Message "Uninstalling " + $ProductName$"
+	
+	killtask "Greenshot.exe"
+	
+	comment "Found at least one installation of " + $SearchPattern$ + " in registry, try to deinstall"
+	comment "Uninstalling found programs"
+	
+	Set $RegId$ = takeString(0, $ResultList64$)
+	
+	Set $InstallDir$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] InstallLocation")
+	
+	if not(contains(GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] DisplayName"), "OPSI"))
+		;installierte Version wurde mit Installer vollzogen, nutze Uninstaller
+		Set $UninstallProgram$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] UninstallString")
+		Winbatch_uninstall
+		sub_check_exitcode
+	else
+		;installierte Version wurde mit files_install vollzogen, also Registry aufräumen und Dateien löschen
+		Registry_cleanup /64bit
+		Files_uninstall
+	endif
+	
+	set $DesktopIcon$ = getProductProperty("desktopicon","no")
+
+	if $DesktopIcon$ = "yes"
+		comment "Delete common desktop icon"
+		Linkfolder_uninstall_desktopicon
+	endif
+	comment "include custom post install file"
+	set $CustomPostDeinstall$ = getProductProperty("custom-post-deinstall","none")
+	if not ($CustomPostDeinstall$ = "none")
+		if FileExists("%ScriptPath%\custom\" + $CustomPostDeinstall$)
+			include_insert "%ScriptPath%\custom\" + $CustomPostDeinstall$
+		endif
+	endif
+	
+	if (Fileexists($InstallDir$))
+		Files_uninstall
+	endif
+endif
+
+
+[Winbatch_uninstall]
+"$UninstallProgram$" /SILENT
+
+[Files_uninstall]
+delete -sf $InstallDir$
+
+[Linkfolder_uninstall_desktopicon]
+set_basefolder common_desktopdirectory
+set_subfolder ""
+delete_element $ProductName$
+
+[Registry_cleanup]
+deleteKey [$RegPathUninstall$\$RegId$]
+openkey [$AutostartRegPath$]
+DeleteVar "Greenshot"
+

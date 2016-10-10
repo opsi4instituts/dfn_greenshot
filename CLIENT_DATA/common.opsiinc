@@ -1,0 +1,76 @@
+; Copyright (c) uib gmbh (www.uib.de)
+; This sourcecode is owned by uib
+; and published under the Terms of the General Public License.
+; credits: http://www.opsi.org/credits/
+requiredWinstVersion >= "4.11.4.3"
+
+DefVar $RegPathUninstall$
+DefVar $InstFiles$
+DefVar $LogDir$
+DefVar $ProductId$
+DefVar $MinimumSpace$
+DefVar $InstallDir$
+DefVar $ExitCode$
+DefVar $CustomPostInstall$
+DefVar $CustomPostDeinstall$
+DefVar $DesktopIcon$
+DefVar $SearchPattern$
+DefVar $ProductName$
+DefVar $RegId$
+DefVar $EXE$
+DefVar $AutostartRegPath$
+DefVar $PathToExe$
+DefVar $ProductVersion$
+DefVar $UninstallProgram$
+DefVar $INST_SystemType$
+DefVar $allowedPlugins$
+DefVar $MSVersion$
+DefVar $ErrorMsg$
+DefVar $language$
+DefStringList $PluginList$
+DefStringlist $ResultList64$
+
+
+Set $LogDir$ = "%opsiLogDir%"
+
+Set $INST_SystemType$ = GetSystemType
+Set $MSVersion$	 = GetMsVersionInfo
+
+;hole mir die Produktversion
+Set $ProductVersion$ = takestring (0, splitString("%installingProdVersion%", "-"))
+
+;hier frage ich den Wert der gesetzten Sprache ab. Wenn "auto" ausgewählt wurde, nehme ich die Systemsprache
+Set $language$ = GetProductProperty("language","auto")
+if ($language$ = "auto")
+	comment "decide which language to use"
+	DefStringList $LanguageMap$
+	set $LanguageMap$ = GetLocaleInfoMap
+	;liefert den Eintrag in der Form (Beispiele: )"de-DE" oder "en-US" zurück, das von Greenshot geforderte Format
+	set $language$ = getValue("system_default_lang_region", $languagemap$)
+endif
+
+
+; ----------------------------------------------------------------
+; - Please edit the following values                             -
+; ----------------------------------------------------------------
+Set $ProductId$		= "dfn_greenshot"
+Set $ProductName$       = "Greenshot"
+Set $MinimumSpace$	= "5 MB"
+Set $RegPathUninstall$	= "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+Set $AutostartRegPath$  = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+Set $InstFiles$         = "files"
+Set $InstallDir$       = "%ProgramFiles64Dir%" + "\" + $ProductName$
+Set $EXE$               = "Greenshot.exe"
+; ----------------------------------------------------------------
+
+setloglevel = 6
+
+include_append "section_sub_check_exitcode.opsiinc"
+include_append "section_sub_search_registry64_uninstall_keys.opsiinc"
+
+if not ($MSVersion$ = "6.1" OR $MSVersion$ = "10.0")
+	Logwarning "Only tested with windows 7 and 10! Please report to the maintainer successful installation on other windows versions."		
+endif
+if not ($INST_SystemType$ = "64 Bit System")
+	Logwarning "Only tested with 64 bit version! Please report to the maintainer successful installation on other windows versions."
+endif
