@@ -21,27 +21,24 @@ else
 	endif
 
 	Message "Installing %installingProdName% (%installingProdVersion%) 64 Bit..."
-	comment "Starting the setup program"
+
 	Files_install
-	
-	Registry_setup /64Bit
-	
+
 	comment "Test for installation success"
-	
-	; Parameter: $SearchPattern$: Suchbegriff in Registry
-	Set $SearchPattern$ = $ProductName$
-	
-	Sub_search_registry64_uninstall_keys
-	; Rückgabewert: $ResultList$ gefundene Einträge
-	
-	if ( count ($ResultList64$) = "0" )
-		logError "Fatal: After Installation " + $ProductName$ + " could not be found in " + $RegPathUninstall$
+	if not (FileExists ($PathToExe$))
+		logError "Fatal: After Installation " + $PathToExe$ + " could not be found in."
 		isFatalError
 	else
-		Set $RegId$ = takeString(0, $ResultList64$)
-		comment "Get 'InstallLocation' from registry for path to exe"
-		Set $InstallDir$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] InstallLocation")
-		Set $PathToExe$ = $InstallDir$ + "\" + $EXE$
+		Registry_install /64Bit
+
+		;patche die Sprachdatei, sodass Greenshot nicht jedes mal nach der Sprache fragt, sondern den eingestellten Standard nimmt
+		Patches_language $InstallDir$ + "\" + $IniFile$
+
+		;aktiviere hier die Plugins, welche ausgewählt wurden. Wurden keine Ausgewählt, so sind automatisch alle aktiviert
+		Set $PluginList$ = GetProductPropertyList ("allowed-plugins","")
+		for %s% in $PluginList$ do sub_concatStrings
+		Patches_plugins $InstallDir$ + "\" + $IniFile$
+
 		set $DesktopIcon$ = getProductProperty("desktopicon","no")
 		if $DesktopIcon$ = "yes"
 			comment "Create common desktop icon"
@@ -56,18 +53,9 @@ else
 			endif
 		endif
 	endif
-	
-	;patche die Sprachdatei, sodass Greenshot nicht jedes mal nach der Sprache fragt, sondern den eingestellten Standard nimmt
-	Patches_greenshot.ini $InstallDir$ + "\greenshot.ini"
-
-	;aktiviere hier die Plugins, welche ausgewählt wurden. Wurden keine Ausgewählt, so sind automatisch alle aktiviert
-	Set $PluginList$ = GetProductPropertyList ("allowed-plugins","")
-	for %s% in $PluginList$ do sub_concatStrings
-	Patches_plugins $InstallDir$ + "\greenshot.ini"
-	
 endif
 
-[Registry_setup]
+[Registry_install]
 ; da wir keinen Installer nehmen, müssen ein paar notwendige Keys angelegt werden, damit sie unter 'Systemeinstellungen' > 'Software und Funktionen' auftaucht
 openkey [$RegPathUninstall$\$ProductName$]
 set "DisplayName" = REG_SZ:"$ProductName$ OPSI-Version: $ProductVersion$"
@@ -79,15 +67,16 @@ set "UninstallString" = REG_SZ:'wscript "$InstallDIR$\uninstall.vbs"'
 set "NoRepair" = REG_DWORD:0001
 set "NoModify" = REG_DWORD:0001
 
-
-;zu Autos
-openKey [$AutostartRegPath$]
-set "Greenshot"       = REG_SZ:"$InstallDIR$\$EXE$"
+;zu Autostart hinzufügen
+openKey [$RegPathAutostart$]
+set "Greenshot" = REG_SZ:"$PathToExe$"
 
 [Files_install]
-copy -sV "%SCRIPTPATH%\$InstFiles$\*.*" "$InstallDIR$"
+copy -s "%SCRIPTPATH%\files\*.*" "$InstallDir$"
+copy "%ScriptPath%\$IniFile$" "$InstallDir$"
+copy "%ScriptPath%\uninstall.vbs" "$InstallDir$"
 
-[Patches_greenshot.ini]
+[Patches_language]
 change [Core] Language=$language$
 
 [Patches_plugins]

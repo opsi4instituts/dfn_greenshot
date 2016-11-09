@@ -20,26 +20,31 @@ else
 	comment "Uninstalling found programs"
 	
 	Set $RegId$ = takeString(0, $ResultList64$)
+	;$InstallDir$ von common.opsiinc soll nicht überschrieben werden! Deswegen $UnInstallDir$!
+	Set $UnInstallDir$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] InstallLocation")
 	
-	Set $InstallDir$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] InstallLocation")
-	
-	if not(contains(GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] DisplayName"), "OPSI"))
+	if contains(GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] DisplayName"), "OPSI")
+		;installierte Version wurde mit OPSI & files_install vollzogen, also Registry aufräumen und Dateien löschen; 
+		Registry_uninstall /64bit
+		Files_uninstall
+	else
 		;installierte Version wurde mit Installer vollzogen, nutze Uninstaller
 		Set $UninstallProgram$ = GetRegistryStringValue64("[" + $RegPathUninstall$ + "\" + $RegId$ + "] UninstallString")
 		Winbatch_uninstall
 		sub_check_exitcode
-	else
-		;installierte Version wurde mit files_install vollzogen, also Registry aufräumen und Dateien löschen
-		Registry_cleanup /64bit
-		Files_uninstall
+
+		; manche Installer räumen nicht richtig auf
+		if (Fileexists($UnInstallDir$))
+			Files_uninstall
+		endif
 	endif
 	
 	set $DesktopIcon$ = getProductProperty("desktopicon","no")
-
 	if $DesktopIcon$ = "yes"
 		comment "Delete common desktop icon"
 		Linkfolder_uninstall_desktopicon
 	endif
+	
 	comment "include custom post install file"
 	set $CustomPostDeinstall$ = getProductProperty("custom-post-deinstall","none")
 	if not ($CustomPostDeinstall$ = "none")
@@ -47,26 +52,21 @@ else
 			include_insert "%ScriptPath%\custom\" + $CustomPostDeinstall$
 		endif
 	endif
-	
-	if (Fileexists($InstallDir$))
-		Files_uninstall
-	endif
 endif
-
 
 [Winbatch_uninstall]
 "$UninstallProgram$" /SILENT
 
 [Files_uninstall]
-delete -sf $InstallDir$
+delete -sf $UnInstallDir$
 
 [Linkfolder_uninstall_desktopicon]
 set_basefolder common_desktopdirectory
 set_subfolder ""
 delete_element $ProductName$
 
-[Registry_cleanup]
+[Registry_uninstall]
 deleteKey [$RegPathUninstall$\$RegId$]
-openkey [$AutostartRegPath$]
+openkey [$RegPathAutostart$]
 DeleteVar "Greenshot"
 

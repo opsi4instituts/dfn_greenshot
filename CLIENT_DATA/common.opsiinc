@@ -5,11 +5,12 @@
 requiredWinstVersion >= "4.11.4.3"
 
 DefVar $RegPathUninstall$
-DefVar $InstFiles$
+DefVar $RegPathAutostart$
 DefVar $LogDir$
 DefVar $ProductId$
 DefVar $MinimumSpace$
 DefVar $InstallDir$
+DefVar $UnInstallDir$
 DefVar $ExitCode$
 DefVar $CustomPostInstall$
 DefVar $CustomPostDeinstall$
@@ -17,8 +18,6 @@ DefVar $DesktopIcon$
 DefVar $SearchPattern$
 DefVar $ProductName$
 DefVar $RegId$
-DefVar $EXE$
-DefVar $AutostartRegPath$
 DefVar $PathToExe$
 DefVar $ProductVersion$
 DefVar $UninstallProgram$
@@ -27,9 +26,9 @@ DefVar $allowedPlugins$
 DefVar $MSVersion$
 DefVar $ErrorMsg$
 DefVar $language$
+DefVar $IniFile$
 DefStringList $PluginList$
 DefStringlist $ResultList64$
-
 
 Set $LogDir$ = "%opsiLogDir%"
 
@@ -49,18 +48,17 @@ if ($language$ = "auto")
 	set $language$ = getValue("system_default_lang_region", $languagemap$)
 endif
 
-
 ; ----------------------------------------------------------------
 ; - Please edit the following values                             -
 ; ----------------------------------------------------------------
-Set $ProductId$		= "dfn_greenshot"
+Set $ProductId$			= "greenshot"
 Set $ProductName$       = "Greenshot"
-Set $MinimumSpace$	= "5 MB"
+Set $MinimumSpace$		= "5 MB"
 Set $RegPathUninstall$	= "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
-Set $AutostartRegPath$  = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-Set $InstFiles$         = "files"
-Set $InstallDir$       = "%ProgramFiles64Dir%" + "\" + $ProductName$
-Set $EXE$               = "Greenshot.exe"
+Set $RegPathAutostart$  = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+Set $InstallDir$        = "%ProgramFiles64Dir%" + "\" + $ProductName$
+Set $PathToExe$ 		= $InstallDir$ + "\" + $ProductName$ + ".exe"
+Set $IniFile$			= $ProductId$ + ".ini"
 ; ----------------------------------------------------------------
 
 setloglevel = 6
