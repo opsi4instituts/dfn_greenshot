@@ -1,5 +1,5 @@
 [Package]
-version: 1
+version: 2
 depends: 
 incremental: False
 
@@ -9,7 +9,7 @@ id: dfn_greenshot
 name: Greenshot
 description: Tool zum Aufnehmen von Bildschirmfotos (Screenshots).
 advice: 
-version: 1.2.9.112
+version: 1.2.9.129
 priority: 0
 licenseRequired: False
 productClasses: 
@@ -66,6 +66,14 @@ values: ["none", "post-deinstall.opsiinc"]
 default: ["none"]
 
 [Changelog]
+dfn_greenshot (1.2.29.129-2)
+	* update-check deaktiviert in greenshot.ini
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 28.01.2017
+
+dfn_greenshot (1.2.29.129-1)
+	* Neue Upstreamversion ('January Bug Bash' mit 24 gefixten Bugs)
+ -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 28.01.2017
+
 dfn_greenshot (1.2.29.112-1)
 	* Neue Upstreamversion (Bugfix)
  -- Thomas Besser (archIT/KIT) <thomas.besser@kit.edu>, 02.01.2017
