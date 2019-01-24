@@ -1,0 +1,68 @@
+; Ergebnis ist StringList (mehrere Einträge möglich);
+; in einer Zeile werden drei Ergebnisse mit "|" abgetrennt geliefert: Registrykey (mit Pfad) | Bereich Registry (kann direkt getRegistryValue übergeben werden | DisplayName
+; z.B. HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Test64|64bit|Test Registry Entry64
+Set $ResultList$ = SearchRegistryUninstallKeys($ProductName$)
+
+if (count ($ResultList$) = "0")
+	comment "No installations of " + $ProductName$ + " found in registry"
+else
+	Message "Uninstalling " + $ProductName$"
+	
+	killtask "Greenshot.exe"
+	
+	comment "Found at least one installation of " + $ProductName$ + " in registry, try to deinstall"
+
+	; nimm den ersten Treffer der StringList (mehrere sollte es hier nicht geben)
+	Set $RegId$ = takeString (0,splitString(takeString(0,$ResultList$), '|'))
+	Set $RegBitScope$ = takeString (1,splitString(takeString(0,$ResultList$), '|'))
+	Set $DisplayName$ = takeString (2,splitString(takeString(0,$ResultList$), '|'))
+	
+	if contains($DisplayName$, "OPSI")
+		;$InstallDir$ von common.opsiinc soll nicht überschrieben werden! Deswegen $UnInstallDir$!
+		Set $UnInstallDir$ = GetRegistryValue($RegId$, "InstallLocation", $RegBitScope$)
+		;installierte Version wurde mit OPSI & files_install vollzogen, also Registry aufräumen und Dateien löschen; 
+		Registry_uninstall /64bit
+		Files_uninstall
+	else
+		;installierte Version wurde mit Inno-Installer vollzogen, nutze Uninstaller
+		Set $UninstallProgram$ = GetRegistryValue($RegId$, "UninstallString", $RegBitScope$)
+		; entferne störende Anführungszeichen im RegValue
+		Set $UninstallProgram$ = unquote($UninstallProgram$, '"')
+
+		Winbatch_uninstall
+		Set $ExitCode$ = getLastExitCode
+		if stringToBool(isInnoExitcodeFatal($ExitCode$, "True", $ErrorString$))
+			isFatalError
+		endif
+	endif
+	
+	if $DesktopLink$ = "True"
+		comment "Delete common desktop icon"
+		Linkfolder_delete_desktoplink
+	endif
+	
+	comment "include custom post deinstall file"
+	set $CustomPostDeinstall$ = getProductProperty("custom-post-deinstall","none")
+	if not ($CustomPostDeinstall$ = "none")
+		if FileExists("%ScriptPath%\custom\" + $CustomPostDeinstall$)
+			include_insert "%ScriptPath%\custom\" + $CustomPostDeinstall$
+		endif
+	endif
+endif
+
+[Winbatch_uninstall]
+"$UninstallProgram$" /VERYSILENT /norestart /nocancel /SUPPRESSMSGBOXES
+
+[Files_uninstall]
+delete -sf $UnInstallDir$
+
+[Linkfolder_delete_desktoplink]
+set_basefolder common_desktopdirectory
+set_subfolder ""
+delete_element $ProductName$
+
+[Registry_uninstall]
+deleteKey [$RegId$]
+openkey [$RegPathAutostart$]
+DeleteVar "Greenshot"
+

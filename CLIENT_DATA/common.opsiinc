@@ -1,12 +1,8 @@
-; Copyright (c) uib gmbh (www.uib.de)
-; This sourcecode is owned by uib
-; and published under the Terms of the General Public License.
-; credits: http://www.opsi.org/credits/
-requiredWinstVersion >= "4.11.4.3"
+requiredWinstVersion >= "4.12.0.16"
 
-DefVar $RegPathUninstall$
 DefVar $RegPathAutostart$
 DefVar $LogDir$
+DefVar $InstalledVersion$
 DefVar $ProductId$
 DefVar $MinimumSpace$
 DefVar $InstallDir$
@@ -14,21 +10,24 @@ DefVar $UnInstallDir$
 DefVar $ExitCode$
 DefVar $CustomPostInstall$
 DefVar $CustomPostDeinstall$
-DefVar $DesktopIcon$
-DefVar $SearchPattern$
+DefVar $DesktopLink$
 DefVar $ProductName$
 DefVar $RegId$
+DefVar $RegBitScope$
+DefVar $DisplayName$
 DefVar $PathToExe$
 DefVar $ProductVersion$
 DefVar $UninstallProgram$
 DefVar $INST_SystemType$
 DefVar $allowedPlugins$
 DefVar $MSVersion$
-DefVar $ErrorMsg$
+DefVar $ErrorString$
 DefVar $language$
 DefVar $IniFile$
 DefStringList $PluginList$
-DefStringlist $ResultList64$
+DefStringlist $ResultList$
+DefStringList $FileInfoList$
+
 
 Set $LogDir$ = "%opsiLogDir%"
 
@@ -37,6 +36,8 @@ Set $MSVersion$	 = GetMsVersionInfo
 
 ;hole mir die Produktversion
 Set $ProductVersion$ = takestring (0, splitString("%installingProdVersion%", "-"))
+
+Set $DesktopLink$ = GetProductProperty("desktop-link","False")
 
 ;hier frage ich den Wert der gesetzten Sprache ab. Wenn "auto" ausgewählt wurde, nehme ich die Systemsprache
 Set $language$ = GetProductProperty("language","auto")
@@ -54,21 +55,29 @@ endif
 Set $ProductId$			= "greenshot"
 Set $ProductName$       = "Greenshot"
 Set $MinimumSpace$		= "5 MB"
-Set $RegPathUninstall$	= "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
 Set $RegPathAutostart$  = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
 Set $InstallDir$        = "%ProgramFiles64Dir%" + "\" + $ProductName$
 Set $PathToExe$ 		= $InstallDir$ + "\" + $ProductName$ + ".exe"
 Set $IniFile$			= $ProductId$ + ".ini"
 ; ----------------------------------------------------------------
 
-setloglevel = 6
-
-include_append "section_sub_check_exitcode.opsiinc"
-include_append "section_sub_search_registry64_uninstall_keys.opsiinc"
+; exitcode library von UIB (siehe C:\program files(x86)\opsi.org\opsi-client-agent\opsi-winst\lib) mit 'local functions'
+importLib "uib_exitcode.opsiscript::isInnoExitcodeFatal"
+; Library registry search uninstall keys (local functions)
+importLib "func_search_registry_uninstall_keys.opsiinc"
 
 if not ($MSVersion$ = "6.1" OR $MSVersion$ = "10.0")
 	Logwarning "Only tested with windows 7 and 10! Please report to the maintainer successful installation on other windows versions."		
 endif
 if not ($INST_SystemType$ = "64 Bit System")
 	Logwarning "Only tested with 64 bit version! Please report to the maintainer successful installation on other windows versions."
+endif
+
+comment "Show product picture"
+if (FileExists("%ScriptPath%\..\lib\icons\%installingProdName%.png"))
+       comment "logo at local library/icons found."
+       ShowBitmap "%ScriptPath%\..\lib\icons\%installingProdName%.png" $ProductName$
+else
+       comment "no logo at local library/icons, use from ScriptPath ..."
+       ShowBitmap "%ScriptPath%\o4i.png" $ProductName$
 endif
